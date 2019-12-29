@@ -1,0 +1,77 @@
+
+AVRA   Ver. 1.4.1 blinktimer.asm Sun Dec 29 00:00:36 2019
+
+
+         ;	blinktimer.asm
+         ;	This code blinks an LED on PB5 every second
+         ;	This time by using timers
+         ;
+         ;	Created by Tamas Schöberl
+         ;	28/12/2019
+         
+          .device ATMega328P
+         
+          .def temp = r16
+          .def overflows = r17
+         
+          .equ DDRB = 0x04
+          .equ PORTB = 0x05
+          .equ TCCR0B = 0x25
+          .equ TCNT0 = 0x26
+          .equ TIMSK0 = 0x6E
+         
+          .org 0x0000
+C:000000 c020      rjmp Reset
+         
+          .org 0x0020
+C:000020 c012      rjmp overflow_handler
+         
+          Reset:
+C:000021 e005      	ldi temp, 0b00000101
+C:000022 bd05      	out TCCR0B, temp 	;This sets the timer to the speed of Clock/1024
+         
+C:000023 e001      	ldi temp, 0b00000001	;Enables Timer Interrupt
+C:000024 9300 006e 	sts TIMSK0, temp
+         
+C:000026 9478      	sei			;Enables Global Interrupt
+         
+C:000027 2700      	clr temp
+C:000028 bd06      	out TCNT0, temp		;Start Timer
+C:000029 9a25      	sbi DDRB, 5
+         
+          blink:
+C:00002a 9a2d      	sbi PORTB, 5
+C:00002b d003      	rcall delay
+C:00002c 982d      	cbi PORTB, 5
+C:00002d d001      	rcall delay
+C:00002e cffb      	rjmp blink
+         
+         
+         
+          delay:
+C:00002f 2711      	clr overflows
+          	sec_count:
+C:000030 311e      		cpi overflows, 30
+C:000031 f7f1      	brne sec_count
+C:000032 9508      	ret
+         
+         
+          overflow_handler:
+C:000033 9513      	inc overflows
+C:000034 331f      	cpi overflows, 0b00111111	;Test for 61 overflows
+C:000035 f409      	brne PC+2
+C:000036 2711      	clr overflows
+C:000037 9518      	reti
+         
+         
+Used memory blocks:
+   code      :  Start = 0x0000, End = 0x0000, Length = 0x0001 (1 word), Overlap=N
+   code      :  Start = 0x0020, End = 0x0037, Length = 0x0018 (24 words), Overlap=N
+
+
+Segment usage:
+   Code      :        25 words (50 bytes)
+   Data      :         0 bytes
+   EEPROM    :         0 bytes
+
+Assembly completed with no errors.
